@@ -6,36 +6,44 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage"; 
 import axios from 'axios';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 const HomeScreen = () => {
   const [homes, setHomes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchHomes = async () => {
-      const token = await AsyncStorage.getItem("token"); 
-      if (!token) {
-        setError("Authentication token is missing. Please log in.");
-        setLoading(false);
-        return;
-      }
-      try {
-        const response = await axios.get("http://192.168.1.23:5000/api/display-homes", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setHomes(response.data.homes);
-      } catch (error) {
-        console.error("Error fetching homes:", error.response?.data || error.message);
-        setError(error.response?.data?.message || "Failed to fetch homes.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHomes();
-  }, []);
+  const fetchHomes = async () => {
+    const token = await AsyncStorage.getItem("token"); 
+    if (!token) {
+      setError("Authentication token is missing. Please log in.");
+      setLoading(false);
+      return;
+    }
+    try {
+      const response = await axios.get("http://192.168.1.23:5000/api/display-homes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setHomes(response.data.homes);
+    } catch (error) {
+      console.error("Error fetching homes:", error.response?.data || error.message);
+      setError(error.response?.data?.message || "Failed to fetch homes.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchHomes(); 
+
+      const interval = setInterval(fetchHomes, 10000); // every 1000 is 1 second
+
+      return () => clearInterval(interval); 
+    }, [])
+  );
 
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />;
@@ -57,6 +65,7 @@ const HomeScreen = () => {
     </View>
   );
 };
+
 
 const MapScreen = () => {
   const [location, setLocation] = useState(null);
