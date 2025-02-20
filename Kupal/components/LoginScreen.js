@@ -21,8 +21,12 @@ const LoginScreen = ({ navigation }) => {
       
       if (response.status === 200) {
         Alert.alert('Success', 'Login successful!');
-        await AsyncStorage.setItem("token", response.data.token);
-        navigation.replace('Home'); 
+
+        if(response.data.token !== null){
+          await AsyncStorage.setItem("token", response.data.token);
+          navigation.replace('Home'); 
+        }
+       
       } else {
         Alert.alert('Error', response.data.message);
       }
